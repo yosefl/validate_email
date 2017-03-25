@@ -117,17 +117,14 @@ def validate_email(email,
     general this should correctly identify any email address likely
     to be in use as of 2011."""
     if debug:
-        logger = logging.getLogger('validate_email')
         logger.setLevel(logging.DEBUG)
-    else:
-        logger = None
 
     try:
         assert re.match(VALID_ADDRESS_REGEXP, email) is not None
-        check_mx |= verify
         if not allow_disposable and is_disposable(email, debug=debug):
             return False
 
+        check_mx |= verify
         if check_mx:
             if not DNS:
                 raise Exception('For check the mx records or check if the email exists you must '
@@ -170,12 +167,15 @@ def validate_email(email,
                     if debug:
                         logger.debug(u'Unable to connect to %s.', mx[1])
             return None
+
     except AssertionError:
         return False
+
     except (ServerError, socket.error) as e:
         if debug:
             logger.debug('ServerError or socket.error exception raised (%s).', e)
         return None
+
     return True
 
 
