@@ -17,24 +17,21 @@
 # exception of a circular definition (see comments below), and
 # with the omission of the pattern components marked as "obsolete".
 
+import logging
+import os
 import re
 import smtplib
-import logging
 import socket
-import os
-
-try:
-    raw_input
-except NameError:
-    def raw_input(prompt=''):
-        return input(prompt)
 
 try:
     import DNS
+
     ServerError = DNS.ServerError
     DNS.DiscoverNameServers()
+
 except (ImportError, AttributeError):
     DNS = None
+
 
     class ServerError(Exception):
         pass
@@ -52,47 +49,30 @@ except (ImportError, AttributeError):
 # even when it's not strictly necessary.  This way we don't forget
 # when it is necessary.)
 #
-WSP = r'[\s]'                                        # see 2.2.2. Structured Header Field Bodies
-CRLF = r'(?:\r\n)'                                   # see 2.2.3. Long Header Fields
-NO_WS_CTL = r'\x01-\x08\x0b\x0c\x0f-\x1f\x7f'        # see 3.2.1. Primitive Tokens
-QUOTED_PAIR = r'(?:\\.)'                             # see 3.2.2. Quoted characters
-FWS = r'(?:(?:' + WSP + r'*' + CRLF + r')?' + \
-      WSP + r'+)'                                    # see 3.2.3. Folding white space and comments
-CTEXT = r'[' + NO_WS_CTL + \
-        r'\x21-\x27\x2a-\x5b\x5d-\x7e]'              # see 3.2.3
-CCONTENT = r'(?:' + CTEXT + r'|' + \
-           QUOTED_PAIR + r')'                        # see 3.2.3 (NB: The RFC includes COMMENT here
-# as well, but that would be circular.)
-COMMENT = r'\((?:' + FWS + r'?' + CCONTENT + \
-          r')*' + FWS + r'?\)'                       # see 3.2.3
-CFWS = r'(?:' + FWS + r'?' + COMMENT + ')*(?:' + \
-       FWS + '?' + COMMENT + '|' + FWS + ')'         # see 3.2.3
-ATEXT = r'[\w!#$%&\'\*\+\-/=\?\^`\{\|\}~]'           # see 3.2.4. Atom
-ATOM = CFWS + r'?' + ATEXT + r'+' + CFWS + r'?'      # see 3.2.4
-DOT_ATOM_TEXT = ATEXT + r'+(?:\.' + ATEXT + r'+)*'   # see 3.2.4
-DOT_ATOM = CFWS + r'?' + DOT_ATOM_TEXT + CFWS + r'?' # see 3.2.4
-QTEXT = r'[' + NO_WS_CTL + \
-        r'\x21\x23-\x5b\x5d-\x7e]'                   # see 3.2.5. Quoted strings
-QCONTENT = r'(?:' + QTEXT + r'|' + \
-           QUOTED_PAIR + r')'                        # see 3.2.5
-QUOTED_STRING = CFWS + r'?' + r'"(?:' + FWS + \
-                r'?' + QCONTENT + r')*' + FWS + \
-                r'?' + r'"' + CFWS + r'?'
-LOCAL_PART = r'(?:' + DOT_ATOM + r'|' + \
-             QUOTED_STRING + r')'                    # see 3.4.1. Addr-spec specification
-DTEXT = r'[' + NO_WS_CTL + r'\x21-\x5a\x5e-\x7e]'    # see 3.4.1
-DCONTENT = r'(?:' + DTEXT + r'|' + \
-           QUOTED_PAIR + r')'                        # see 3.4.1
-DOMAIN_LITERAL = CFWS + r'?' + r'\[' + \
-                 r'(?:' + FWS + r'?' + DCONTENT + \
-                 r')*' + FWS + r'?\]' + CFWS + r'?'  # see 3.4.1
-DOMAIN = r'(?:' + DOT_ATOM + r'|' + \
-         DOMAIN_LITERAL + r')'                       # see 3.4.1
-ADDR_SPEC = LOCAL_PART + r'@' + DOMAIN               # see 3.4.1
-
-# A valid address will match exactly the 3.4.1 addr-spec.
-VALID_ADDRESS_REGEXP = '^' + ADDR_SPEC + '$'
-
+WSP = r'[\s]'  # see 2.2.2. Structured Header Field Bodies
+CRLF = r'(?:\r\n)'  # see 2.2.3. Long Header Fields
+NO_WS_CTL = r'\x01-\x08\x0b\x0c\x0f-\x1f\x7f'  # see 3.2.1. Primitive Tokens
+QUOTED_PAIR = r'(?:\\.)'  # see 3.2.2. Quoted characters
+FWS = r'(?:(?:' + WSP + r'*' + CRLF + r')?' + WSP + r'+)'  # see 3.2.3. Folding white space and comments
+CTEXT = r'[' + NO_WS_CTL + r'\x21-\x27\x2a-\x5b\x5d-\x7e]'  # see 3.2.3
+# (NB: The RFC includes COMMENT here as well, but that would be circular.)
+CCONTENT = r'(?:' + CTEXT + r'|' + QUOTED_PAIR + r')'  # see 3.2.3
+COMMENT = r'\((?:' + FWS + r'?' + CCONTENT + r')*' + FWS + r'?\)'  # see 3.2.3
+CFWS = r'(?:' + FWS + r'?' + COMMENT + ')*(?:' + FWS + '?' + COMMENT + '|' + FWS + ')'  # see 3.2.3
+ATEXT = r'[\w!#$%&\'\*\+\-/=\?\^`\{\|\}~]'  # see 3.2.4. Atom
+ATOM = CFWS + r'?' + ATEXT + r'+' + CFWS + r'?'  # see 3.2.4
+DOT_ATOM_TEXT = ATEXT + r'+(?:\.' + ATEXT + r'+)*'  # see 3.2.4
+DOT_ATOM = CFWS + r'?' + DOT_ATOM_TEXT + CFWS + r'?'  # see 3.2.4
+QTEXT = r'[' + NO_WS_CTL + r'\x21\x23-\x5b\x5d-\x7e]'  # see 3.2.5. Quoted strings
+QCONTENT = r'(?:' + QTEXT + r'|' + QUOTED_PAIR + r')'  # see 3.2.5
+QUOTED_STRING = CFWS + r'?' + r'"(?:' + FWS + r'?' + QCONTENT + r')*' + FWS + r'?' + r'"' + CFWS + r'?'
+LOCAL_PART = r'(?:' + DOT_ATOM + r'|' + QUOTED_STRING + r')'  # see 3.4.1. Addr-spec specification
+DTEXT = r'[' + NO_WS_CTL + r'\x21-\x5a\x5e-\x7e]'  # see 3.4.1
+DCONTENT = r'(?:' + DTEXT + r'|' + QUOTED_PAIR + r')'  # see 3.4.1
+DOMAIN_LITERAL = CFWS + r'?' + r'\[' + r'(?:' + FWS + r'?' + DCONTENT + r')*' + FWS + r'?\]' + CFWS + r'?'  # see 3.4.1
+DOMAIN = r'(?:' + DOT_ATOM + r'|' + DOMAIN_LITERAL + r')'  # see 3.4.1
+ADDR_SPEC = LOCAL_PART + r'@' + DOMAIN  # see 3.4.1
+VALID_ADDRESS_REGEXP = '^' + ADDR_SPEC + '$'  # A valid address will match exactly the 3.4.1 addr-spec.
 MX_DNS_CACHE = {}
 MX_CHECK_CACHE = {}
 
@@ -101,7 +81,7 @@ logger = logging.getLogger(__name__)
 
 def is_disposable(email, debug=False):
     """Indicate whether the email is known as being a disposable email or not"""
-    email_domain = email.rsplit('@',1)
+    email_domain = email.rsplit('@', 1)
     if email_domain in _disposable:
         if debug:
             logger.warn("Email %s is flagged as disposable (domain=%s)", email, domain)
@@ -122,10 +102,14 @@ def get_mx_ip(hostname):
     return MX_DNS_CACHE[hostname]
 
 
-def validate_email(email, check_mx=False, verify=False, debug=False, smtp_timeout=10,
+def validate_email(email,
+                   check_mx=False,
+                   verify=False,
+                   debug=False,
+                   smtp_timeout=10,
                    allow_disposable=True,
-                   sending_email='', 
-):
+                   sending_email='',
+                   ):
     """Indicate whether the given string is a valid email address
     according to the 'addr-spec' portion of RFC 2822 (see section
     3.4.1).  Parts of the spec that are marked obsolete are *not*
@@ -195,46 +179,6 @@ def validate_email(email, check_mx=False, verify=False, debug=False, smtp_timeou
         return None
     return True
 
-if __name__ == "__main__":
-    import time
-    while True:
-        email = raw_input('Enter email for validation: ')
-
-        mx = raw_input('Validate MX record? [yN] ')
-        if mx.strip().lower() == 'y':
-            mx = True
-        else:
-            mx = False
-
-        validate = raw_input('Try to contact server for address validation? [yN] ')
-        if validate.strip().lower() == 'y':
-            validate = True
-        else:
-            validate = False
-
-        disposable = raw_input('Can the email be disposable? [Yn] ')
-        if disposable.strip().lower() == 'n':
-            disposable = False
-        else:
-            disposable = True
-
-        logging.basicConfig()
-
-        result = validate_email(email, mx, validate, debug=True, smtp_timeout=1, allow_disposable=disposable)
-        if result:
-            print("Valid!")
-        elif result is None:
-            print("I'm not sure.")
-        else:
-            print("Invalid!")
-
-        time.sleep(1)
-
-
-# import sys
-
-# sys.modules[__name__],sys.modules['validate_email_module'] = validate_email,sys.modules[__name__]
-# from validate_email_module import *
 
 _disposable = ["0-mail.com", "027168.com", "0815.ru", "0815.ry", "0815.su", "0845.ru", "0clickemail.com", "0wnd.net",
                "0wnd.org", "0x207.info", "1-8.biz", "100likers.com", "10mail.com", "10mail.org", "10minut.com.pl",
@@ -590,3 +534,54 @@ _disposable = ["0-mail.com", "027168.com", "0815.ru", "0815.ry", "0815.su", "084
                "zfymail.com", "zik.dj", "zippymail.info", "zipsendtest.com", "zoaxe.com", "zoemail.com", "zoemail.net",
                "zoemail.org", "zoetropes.org", "zombie-hive.com", "zomg.info", "zp.ua", "zumpul.com", "zxcv.com",
                "zxcvbnm.com", "zzz.com"]
+
+
+def interactive_check():
+    import time
+
+    try:  # py2
+        raw_input
+    except NameError:  # py3
+        def raw_input(prompt=''):
+            return input(prompt)
+
+    while True:
+        email = raw_input('Enter email for validation: ')
+
+        mx = raw_input('Validate MX record? [yN] ')
+        if mx.strip().lower() == 'y':
+            mx = True
+        else:
+            mx = False
+
+        validate = raw_input('Try to contact server for address validation? [yN] ')
+        if validate.strip().lower() == 'y':
+            validate = True
+        else:
+            validate = False
+
+        disposable = raw_input('Can the email be disposable? [Yn] ')
+        if disposable.strip().lower() == 'n':
+            disposable = False
+        else:
+            disposable = True
+
+        sending_email = raw_input('sending_email? [string] ')
+
+        logging.basicConfig()
+
+        result = validate_email(email, mx, validate, debug=True, smtp_timeout=1,
+                                allow_disposable=disposable,
+                                sending_email=sending_email)
+        if result:
+            print("Valid!")
+        elif result is None:
+            print("I'm not sure.")
+        else:
+            print("Invalid!")
+
+        time.sleep(1)
+
+
+if __name__ == "__main__":
+    interactive_check()
