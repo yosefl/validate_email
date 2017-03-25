@@ -18,7 +18,6 @@
 # with the omission of the pattern components marked as "obsolete".
 
 import logging
-import os
 import re
 import smtplib
 import socket
@@ -81,10 +80,10 @@ logger = logging.getLogger(__name__)
 
 def is_disposable(email, debug=False):
     """Indicate whether the email is known as being a disposable email or not"""
-    email_domain = email.rsplit('@', 1)
+    email_domain = email.rsplit('@', 1)[1]
     if email_domain in _disposable:
         if debug:
-            logger.warn("Email %s is flagged as disposable (domain=%s)", email, domain)
+            logger.warn("Email %s is flagged as disposable (domain=%s)", email, email_domain)
         return True
     return False
 
