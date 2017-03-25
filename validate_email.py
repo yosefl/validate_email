@@ -96,15 +96,16 @@ VALID_ADDRESS_REGEXP = '^' + ADDR_SPEC + '$'
 MX_DNS_CACHE = {}
 MX_CHECK_CACHE = {}
 
+logger = logging.getLogger(__name__)
+
 
 def is_disposable(email, debug=False):
     """Indicate whether the email is known as being a disposable email or not"""
-    for domain in _disposable:
-        if email.endswith("@{}".format(domain)):
-            if debug:
-                logging.getLogger("validate_email").warn("Email %s is flagged as disposable (domain=%s)",
-                                                          email, domain)
-            return True
+    email_domain = email.rsplit('@',1)
+    if email_domain in _disposable:
+        if debug:
+            logger.warn("Email %s is flagged as disposable (domain=%s)", email, domain)
+        return True
     return False
 
 
