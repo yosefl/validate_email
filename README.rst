@@ -1,6 +1,6 @@
-==============
-Validate_email
-==============
+=================
+validate_email_wt
+=================
 
 Validate_email is a package for Python that check if an email is valid, properly formatted and really exists.
 
@@ -11,7 +11,7 @@ INSTALLATION
 
 First, you must do::
 
-    pip install validate_email
+    pip install validate_email_wt
 
 Extra
 ------
