@@ -59,7 +59,7 @@ class AddressPatternTests(unittest.TestCase):
         self.assertFalse(validate_email(r'@Sörensen.example.com')) # Nothing before the @
 
     def test_hebrew_regular(self):
-        self.assertTrue(validate_email(r'com.פלוניאלמוני@דומיין'))
+        self.assertTrue(validate_email(r'com.פלוניאלמוני@דומיין')) # simple validate hebrew
         self.assertTrue(validate_email(r'com.פלוני.אלמוני@דומיין'))
         self.assertTrue(validate_email(r'com.אלמוני@דומיין+פלוני'))
         
