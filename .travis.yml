@@ -3,8 +3,8 @@ python:
 - "2.7"
 #install:
 # - pip install .
-pip install validate_email_wt
-pip install pyDNS
+install: pip install validate_email_wt
+install: pip install pyDNS
 
 script: python tests/validate_email_tests.py
  
