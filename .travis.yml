@@ -1,8 +1,11 @@
 language: python
 python:
-- "3.6"
+- "2.7"
 #install:
 # - pip install .
+pip install validate_email_wt
+pip install pyDNS
+
 script: python tests/validate_email_tests.py
  
 
