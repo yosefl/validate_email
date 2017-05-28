@@ -1,5 +1,8 @@
 # encoding: utf-8
 import unittest
+import sys
+
+sys.path.insert(0,'..')
 
 from validate_email import validate_email
 
