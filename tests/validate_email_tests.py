@@ -3,6 +3,7 @@ import unittest
 import sys
 
 sys.path.insert(0,'..')
+print(sys.path)
 
 from validate_email import validate_email
 
